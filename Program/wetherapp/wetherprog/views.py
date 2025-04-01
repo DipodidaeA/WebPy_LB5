@@ -1,69 +1,98 @@
 from django.shortcuts import render
-from django.http import HttpResponseRedirect, HttpResponseNotFound, HttpResponseForbidden
-from wetherprog.models import WetherDB, DTO
-
-wetherDB = WetherDB()
+from django.http import HttpResponseRedirect
+from wetherprog.models import Day, Date, Temp
+from .forms import AdminForm
 
 def user(request):
-    datas = wetherDB.getAll()
-    response = render(request, "user.html", context={"datas": datas})
+    days = Day.objects.select_related("date", "temp").all()
+    response = render(request, "user.html", {"days": days})
     response.set_cookie("autor", "False")
     return response
 
+def errmsguser(request, error="All good"):
+    return render(request, "errmsguser.html", {"error": error})
+
 def autor(request):
-    passw = request.GET.get("Passw")
+    passw = request.POST.get("Passw")
     if int(passw) != 123:
-        return HttpResponseForbidden("Uncorect password")
+        return HttpResponseRedirect("/errmsguser/Invalid password")
     response = HttpResponseRedirect("/admin/")
     response.set_cookie("autor", "True")
     return response
 
+def errmsgadmin(request, error="All good"):
+    return render(request, "errmsgadmin.html", {"error": error})
+
 def admin(request):
     autor = request.COOKIES["autor"]
     if autor == "False":
-        return HttpResponseForbidden("You is not admin")
-    datas = wetherDB.getAll()
-    return render(request, "admin.html", context={"datas": datas})
+        return HttpResponseRedirect("/errmsguser/You in not admin")
+    adminForm = AdminForm(request.POST)
+    days = Day.objects.select_related("date", "temp").all()
+    return render(request, "admin.html", {"days": days, "form": adminForm})
 
 def add(request):
     autor = request.COOKIES["autor"]
     if autor == "False":
-        return HttpResponseForbidden("You is not admin")
-    name = request.GET.get("Name")
-    d = request.GET.get("D")
-    m = request.GET.get("M")
-    y = request.GET.get("Y")
-    morn = request.GET.get("Morn")
-    noon = request.GET.get("Noon")
-    night = request.GET.get("Night")
-    dto = DTO(0, str(name), int(d), int(m), int(y), int(morn), int(noon), int(night))
-    wetherDB.add(dto)
-    return HttpResponseRedirect("/admin/")
+        return HttpResponseRedirect("/errmsguser/You in not admin")
+    
+    adminForm = AdminForm(request.POST)
+    if adminForm.is_valid():      
+        day = Day()
+        date = Date()
+        temp = Temp()
+        date.Name = adminForm.cleaned_data["name"]
+        date.D = adminForm.cleaned_data["d"]
+        date.M = adminForm.cleaned_data["m"]
+        date.Y = adminForm.cleaned_data["y"]
+        date.save()
 
-def up(request):
+        temp.Morn = adminForm.cleaned_data["morn"]
+        temp.Noon = adminForm.cleaned_data["noon"]
+        temp.Night = adminForm.cleaned_data["night"]
+        temp.save()
+
+        day.date = date
+        day.temp = temp  
+        day.save()     
+        return HttpResponseRedirect("/admin/")
+
+def up(request, id:int):
     autor = request.COOKIES["autor"]
     if autor == "False":
-        return HttpResponseForbidden("You is not admin")
-    id = request.GET.get("Id")
-    name = request.GET.get("Name")
-    d = request.GET.get("D")
-    m = request.GET.get("M")
-    y = request.GET.get("Y")
-    morn = request.GET.get("Morn")
-    noon = request.GET.get("Noon")
-    night = request.GET.get("Night")
-    dto = DTO(int(id), str(name), int(d), int(m), int(y), int(morn), int(noon), int(night))
-    req = wetherDB.update(dto)
-    if req == None:
-        return HttpResponseNotFound("Not found Day")
-    return HttpResponseRedirect("/admin/")
+        return HttpResponseRedirect("/errmsguser/You in not admin")
+    try:
+        day = Day.objects.select_related("date", "temp").get(id=id)
+        date:Date = day.date
+        temp:Temp = day.temp
+        adminForm = AdminForm(request.POST)
+        if request.method == "POST":
+            if adminForm.is_valid():
+                date.Name = adminForm.cleaned_data["name"]
+                date.D = adminForm.cleaned_data["d"]
+                date.M = adminForm.cleaned_data["m"]
+                date.Y = adminForm.cleaned_data["y"]
+                date.save()
 
-def dele(request):
+                temp.Morn = adminForm.cleaned_data["morn"]
+                temp.Noon = adminForm.cleaned_data["noon"]
+                temp.Night = adminForm.cleaned_data["night"]
+                temp.save()
+                return HttpResponseRedirect("/admin/")
+        else:
+            return render(request, "up.html", {"form": adminForm})
+    except Day.DoesNotExist:
+        return HttpResponseRedirect("/errmsgadmin/Day not found")
+
+def dele(request, id:int):
     autor = request.COOKIES["autor"]
     if autor == "False":
-        return HttpResponseForbidden("You is not admin")
-    id = request.GET.get("Id")
-    req = wetherDB.delete(int(id))
-    if req == None:
-        return HttpResponseNotFound("Not found Day")
-    return HttpResponseRedirect("/admin/")
+        return HttpResponseRedirect("/errmsguser/You in not admin")
+    try:
+        day = Day.objects.select_related("date", "temp").get(id=id)
+        day.date.delete()
+        day.temp.delete()
+        day.delete()
+        return HttpResponseRedirect("/admin/")
+    except Day.DoesNotExist:
+        return HttpResponseRedirect("/errmsgadmin/Day not found")

@@ -5,21 +5,34 @@
     <meta charset="utf-8" />
 </head>
 <body>
-    Повернутися до користувача: http://127.0.0.1:8000/<br/>
-    Додати день: http://127.0.0.1:8000/admin/add?Name=Mon&D=5&M=5&Y=2025&Morn=25&Noon=30&Night=24<br/>
-    Оновити день: http://127.0.0.1:8000/admin/up?Id=1&Name=Tue&D=7&M=8&Y=2024&Morn=10&Noon=20&Night=15<br/>
-    Видалит день: http://127.0.0.1:8000/admin/dele?Id=1<br/>
-    {% for data in datas %}
-        <p>
-            Id: {{data.Id}};
-            День: {{ data.Name }}; 
-            Число: {{ data.D }}; 
-            Місяць: {{ data.M }}; 
-            Рік: {{ data.Y }}; 
-            Зранку: {{ data.Morn }}; 
-            Удень: {{ data.Noon }}; 
-            Уночі: {{ data.Night }}
-        </p>
-    {% endfor %}
+    <form method="GET" action="/">
+        <input type="submit" value="Користувач" >
+    </form>
+    <form method="POST" action="/add">
+        {% csrf_token %}
+        <table>
+            {{ form.as_p }}
+        </table>
+        <input type="submit" value="Зберегти" >
+    </form>
+        <table>
+        <thead><th>Id</th><th>День</th><th>Число</th><th>Місяць</th><th>Рік</th><th>Зранку</th><th>Удень</th><th>Уночі</th><th></th></thead>
+        {% for day in days %}
+            <tr>
+                <td>{{ day.id }}</td>
+                <td>{{ day.date.Name }}</td>
+                <td>{{ day.date.D }}</td>
+                <td>{{ day.date.M }}</td>
+                <td>{{ day.date.Y }}</td>
+                <td>{{ day.temp.Morn }}</td>
+                <td>{{ day.temp.Noon }}</td>
+                <td>{{ day.temp.Night }}</td>
+                <td>
+                    <a href="/up/{{day.id}}/">Оновити</a> | 
+                    <a href="/dele/{{day.id}}/">Видалити</a>
+                </td>
+            </tr>
+        {% endfor %}
+        </table>
 </body>
 </html>

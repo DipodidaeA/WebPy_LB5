@@ -5,18 +5,28 @@
     <meta charset="utf-8" />
 </head>
 <body>
-    Авторизація адміна: http://127.0.0.1:8000/admin/autor?Passw=123<br/>
-    {% for data in datas %}
+    <form method="POST" action="/autor">
+        {% csrf_token %}
         <p>
-            Id: {{data.Id}};
-            День: {{ data.Name }}; 
-            Число: {{ data.D }}; 
-            Місяць: {{ data.M }}; 
-            Рік: {{ data.Y }}; 
-            Зранку: {{ data.Morn }}; 
-            Удень: {{ data.Noon }}; 
-            Уночі: {{ data.Night }}
+            <label>Пароль адміна</label><br>
+            <input type="text" name="Passw" />
         </p>
-    {% endfor %}
+        <input type="submit" value="Підтвердити" >
+    </form>
+        <table>
+        <thead><th>Id</th><th>День</th><th>Число</th><th>Місяць</th><th>Рік</th><th>Зранку</th><th>Удень</th><th>Уночі</th></thead>
+        {% for day in days %}
+            <tr>
+                <td>{{ day.id }}</td>
+                <td>{{ day.date.Name }}</td>
+                <td>{{ day.date.D }}</td>
+                <td>{{ day.date.M }}</td>
+                <td>{{ day.date.Y }}</td>
+                <td>{{ day.temp.Morn }}</td>
+                <td>{{ day.temp.Noon }}</td>
+                <td>{{ day.temp.Night }}</td>
+            </tr>
+        {% endfor %}
+        </table>
 </body>
 </html>
